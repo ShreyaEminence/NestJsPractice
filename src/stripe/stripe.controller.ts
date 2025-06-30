@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
@@ -13,6 +14,11 @@ import { StripeService } from '@stripe/stripe.service';
 @Controller('stripe')
 export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
+
+  @Get('products')
+  getProducts() {
+    return this.stripeService.getProductsWithPrices();
+  }
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
@@ -28,7 +34,11 @@ export class StripeController {
     const result = await this.stripeService.createCheckoutSession();
 
     if (result.url) {
-      return res.json({ url: result.url });
+      return res.json({
+        url: result.url,
+        line_items: result.line_items,
+        id: result.id,
+      });
     }
 
     return res

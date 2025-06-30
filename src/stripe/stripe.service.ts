@@ -15,6 +15,27 @@ export class StripeService {
       },
     );
   }
+
+  async getProductsWithPrices() {
+    const products = await this.stripe.products.list({ active: true });
+    const prices = await this.stripe.prices.list({ active: true });
+
+    // Combine prices with their respective products
+    const productList = products.data.map((product) => {
+      const price = prices.data.find((p) => p.product === product.id);
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        image: product.images?.[0] || '',
+        priceId: price?.id,
+        amount: price?.unit_amount,
+        currency: price?.currency,
+      };
+    });
+
+    return productList;
+  }
   handleWebhook(rawBody: Buffer, signature: string) {
     const webhookSecret = this.configService.get<string>(
       'STRIPE_WEBHOOK_SECRET',
@@ -55,7 +76,11 @@ export class StripeService {
     return { received: true };
   }
 
-  async createCheckoutSession(): Promise<{ url: string }> {
+  async createCheckoutSession(): Promise<{
+    url: string;
+    line_items: Stripe.Checkout.SessionCreateParams.LineItem[];
+    id: string;
+  }> {
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -71,8 +96,8 @@ export class StripeService {
         },
       ],
       mode: 'payment',
-      success_url: 'http://localhost:3000/success',
-      cancel_url: 'http://localhost:3000/cancel',
+      success_url: this.configService.get<string>('SUCCESS_URL')!,
+      cancel_url: this.configService.get<string>('FAILURE_URL')!,
     });
 
     if (!session.url) {
@@ -81,6 +106,21 @@ export class StripeService {
       );
     }
 
-    return { url: session.url };
+    return {
+      url: session.url,
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'T-Shirt',
+            },
+            unit_amount: 2000, // its in cents
+          },
+          quantity: 1,
+        },
+      ],
+      id: session.id,
+    };
   }
 }
