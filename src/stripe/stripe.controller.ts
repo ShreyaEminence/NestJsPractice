@@ -30,8 +30,10 @@ export class StripeController {
   }
 
   @Post('checkout')
-  async createCheckoutSession(@Res() res: Response) {
-    const result = await this.stripeService.createCheckoutSession();
+  async createCheckoutSession(@Req() req: Request, @Res() res: Response) {
+    const result = await this.stripeService.createCheckoutSession(
+      req.body.priceId,
+    );
 
     if (result.url) {
       return res.json({
@@ -45,4 +47,8 @@ export class StripeController {
       .status(400)
       .json({ success: false, message: 'Failed to create session' });
   }
+  // @Post('create-free-plan')
+  // async createFreePlan() {
+  //   return this.stripeService.createFreePlanProduct();
+  // }
 }

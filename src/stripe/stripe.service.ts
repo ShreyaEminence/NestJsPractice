@@ -16,6 +16,51 @@ export class StripeService {
     );
   }
 
+  // async createFreePlanProduct() {
+  //   // ✅ 1. Create Product
+  //   const product = await this.stripe.products.create({
+  //     name: '7-Day Free Plan',
+  //     description:
+  //       'This plan is free for 7 days and will auto-cancel after trial.',
+  //   });
+
+  //   // ✅ 2. Create $0 Recurring Price
+  //   const price = await this.stripe.prices.create({
+  //     unit_amount: 0, // 0 cents = $0
+  //     currency: 'usd',
+  //     recurring: { interval: 'month' },
+  //     product: product.id,
+  //   });
+
+  //   // ✅ 3. Create Checkout Session with 7-day trial and auto-cancel
+  //   const session = await this.stripe.checkout.sessions.create({
+  //     mode: 'subscription',
+  //     payment_method_types: ['card'],
+  //     line_items: [
+  //       {
+  //         price: price.id, // use the actual $0 price ID you just created
+  //         quantity: 1,
+  //       },
+  //     ],
+  //     subscription_data: {
+  //       trial_period_days: 7,
+  //       trial_settings: {
+  //         end_behavior: {
+  //           missing_payment_method: 'cancel', // cancel after 7 days if no card added
+  //         },
+  //       },
+  //     },
+  //     success_url: 'https://yourdomain.com/success',
+  //     cancel_url: 'https://yourdomain.com/cancel',
+  //   });
+
+  //   return {
+  //     productId: product.id,
+  //     priceId: price.id,
+  //     checkoutUrl: session.url,
+  //   };
+  // }
+
   async getProductsWithPrices() {
     const products = await this.stripe.products.list({ active: true });
     const prices = await this.stripe.prices.list({ active: true });
@@ -76,7 +121,7 @@ export class StripeService {
     return { received: true };
   }
 
-  async createCheckoutSession(): Promise<{
+  async createCheckoutSession(priceId: string): Promise<{
     url: string;
     line_items: Stripe.Checkout.SessionCreateParams.LineItem[];
     id: string;
@@ -85,17 +130,11 @@ export class StripeService {
       payment_method_types: ['card'],
       line_items: [
         {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'T-Shirt',
-            },
-            unit_amount: 2000, // its in cents
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
-      mode: 'payment',
+      mode: 'subscription',
       success_url: this.configService.get<string>('SUCCESS_URL')!,
       cancel_url: this.configService.get<string>('FAILURE_URL')!,
     });
@@ -110,13 +149,7 @@ export class StripeService {
       url: session.url,
       line_items: [
         {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'T-Shirt',
-            },
-            unit_amount: 2000, // its in cents
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
