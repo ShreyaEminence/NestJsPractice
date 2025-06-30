@@ -30,7 +30,11 @@
       ],
       "@auth/*": [
         "src/auth/*"
-      ]
+      ],
+      "@stripe/*": [
+        "src/stripe/*"
+      ],
+      "@success/*":["src/success/*"],
     }
   }
 }

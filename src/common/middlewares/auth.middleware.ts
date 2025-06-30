@@ -1,4 +1,3 @@
-// src/common/middleware/auth.middleware.ts
 import {
   Injectable,
   NestMiddleware,
@@ -20,7 +19,7 @@ export class AuthMiddleware implements NestMiddleware {
 
     try {
       const decoded = jwt.verify(token, 'yourSecretKey'); // Use process.env.JWT_SECRET ideally
-      req['user'] = decoded; // Attach user info to the request
+      req.user = decoded; // Attach user info to the request
       next();
     } catch (err) {
       throw new UnauthorizedException('Invalid or expired token');
